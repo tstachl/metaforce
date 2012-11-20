@@ -1,0 +1,498 @@
+<!DOCTYPE html>  <html> <head>   <title>client.coffee</title>   <meta http-equiv="content-type" content="text/html; charset=UTF-8">   <link rel="stylesheet" media="all" href="docco.css" /> </head> <body>   <div id="container">     <div id="background"></div>          <table cellpadding="0" cellspacing="0">       <thead>         <tr>           <th class="docs">             <h1>               client.coffee             </h1>           </th>           <th class="code">           </th>         </tr>       </thead>       <tbody>                               <tr id="section-1">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-1">&#182;</a>               </div>               <p><strong>Client</strong> is the API client for the Force.com Metadata, Partner and
+Apex API. It doesn't do anything else but interact with the api based
+on options you pass to the specific method. At the moment it only
+contains methods needed for the Force.com CLI and the Force.com Cloud9
+extension.</p>             </td>             <td class="code">               <div class="highlight"><pre></pre></div>             </td>           </tr>                               <tr id="section-2">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-2">&#182;</a>               </div>               <h1>Dependencies</h1>             </td>             <td class="code">               <div class="highlight"><pre></pre></div>             </td>           </tr>                               <tr id="section-3">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-3">&#182;</a>               </div>               <p>Soap contributes a Node Soap Client to talk to the API</p>             </td>             <td class="code">               <div class="highlight"><pre><span class="nv">soap    = </span><span class="nx">require</span> <span class="s">&#39;soap&#39;</span></pre></div>             </td>           </tr>                               <tr id="section-4">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-4">&#182;</a>               </div>               <p>We need path to resolve the path to the WSDL files</p>             </td>             <td class="code">               <div class="highlight"><pre><span class="nv">path    = </span><span class="nx">require</span> <span class="s">&#39;path&#39;</span></pre></div>             </td>           </tr>                               <tr id="section-5">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-5">&#182;</a>               </div>               <h1>The Client Class</h1>             </td>             <td class="code">               <div class="highlight"><pre><span class="nv">module.exports = </span><span class="k">class</span> <span class="nx">Client</span></pre></div>             </td>           </tr>                               <tr id="section-6">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-6">&#182;</a>               </div>               <h3>Constructor</h3>
+
+<p>The Constructor just sets a few basic variables, all of those are
+optional.</p>
+
+<pre><code>@param {object} opts
+  {
+    apiVersion: 26.0,
+    username: '',
+    password: '',
+    endpoint: 'login.salesforce.com',
+    sid: '',
+    userId: '',
+    overrideSessionCheck: false
+  }
+@return {Client} this
+@api public
+</code></pre>             </td>             <td class="code">               <div class="highlight"><pre>  <span class="nv">constructor: </span><span class="nf">(opts = {}) -&gt;</span>
+    <span class="vi">@apiVersion           = </span><span class="nx">opts</span><span class="p">.</span><span class="nx">apiVersion</span> <span class="o">or</span> <span class="mf">26.0</span>
+    <span class="vi">@username             = </span><span class="nx">opts</span><span class="p">.</span><span class="nx">username</span> <span class="o">or</span> <span class="s">&#39;&#39;</span>
+    <span class="vi">@password             = </span><span class="nx">opts</span><span class="p">.</span><span class="nx">password</span> <span class="o">or</span> <span class="s">&#39;&#39;</span>
+    <span class="vi">@endpoint             = </span><span class="nx">opts</span><span class="p">.</span><span class="nx">endpoint</span> <span class="o">or</span> <span class="s">&#39;login.salesforce.com&#39;</span>
+    
+    <span class="nx">unless</span> <span class="o">~</span><span class="nx">@endpoint</span><span class="p">.</span><span class="nx">indexOf</span> <span class="s">&#39;https&#39;</span>
+      <span class="vi">@endpoint = </span><span class="s">&quot;https://</span><span class="si">#{</span><span class="nx">@endpoint</span><span class="si">}</span><span class="s">&quot;</span>
+    <span class="nx">unless</span> <span class="o">~</span><span class="nx">@endpoint</span><span class="p">.</span><span class="nx">indexOf</span> <span class="s">&#39;/services&#39;</span>
+      <span class="nx">@endpoint</span> <span class="o">+=</span> <span class="s">&#39;/services/Soap/u/26.0&#39;</span>
+    
+    <span class="vi">@sid                  = </span><span class="nx">opts</span><span class="p">.</span><span class="nx">sid</span> <span class="o">or</span> <span class="s">&#39;&#39;</span>
+    <span class="vi">@userId               = </span><span class="nx">opts</span><span class="p">.</span><span class="nx">userId</span> <span class="o">or</span> <span class="s">&#39;&#39;</span>
+    <span class="vi">@overrideSessionCheck = </span><span class="nx">opts</span><span class="p">.</span><span class="nx">overrideSessionCheck</span> <span class="o">or</span> <span class="kc">no</span>
+  </pre></div>             </td>           </tr>                               <tr id="section-7">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-7">&#182;</a>               </div>               <h2>Partner API calls</h2>
+
+<h3>login()</h3>
+
+<p>If not already logged in this should be the first call it'll setup default
+params like user id and the metadata server url.</p>
+
+<pre><code>@param {object} opts
+  {
+    username: '',
+    password: '',
+    endpoint: ''
+  }
+@param {function} callback(err, response, request)
+@return void
+@api public
+</code></pre>             </td>             <td class="code">               <div class="highlight"><pre>  <span class="nv">login: </span><span class="nf">(opts, callback) -&gt;</span>
+    <span class="p">[</span><span class="nx">opts</span><span class="p">,</span> <span class="nx">callback</span><span class="p">]</span> <span class="o">=</span> <span class="nx">@cleanOptions</span> <span class="nx">opts</span><span class="p">,</span> <span class="nx">callback</span>
+    <span class="k">return</span> <span class="nx">@fromSession</span> <span class="nx">callback</span> <span class="nx">unless</span> <span class="nx">@sid</span> <span class="o">is</span> <span class="s">&#39;&#39;</span>
+    
+    <span class="nv">opts.username = </span><span class="nx">opts</span><span class="p">.</span><span class="nx">username</span> <span class="o">or</span> <span class="nx">@username</span>
+    <span class="nv">opts.password = </span><span class="nx">opts</span><span class="p">.</span><span class="nx">password</span> <span class="o">or</span> <span class="nx">@password</span>
+    
+    <span class="vi">@endpoint = </span><span class="nx">opts</span><span class="p">.</span><span class="nx">endpoint</span> <span class="o">or</span> <span class="nx">@endpoint</span>
+    <span class="k">delete</span> <span class="nx">opts</span><span class="p">.</span><span class="nx">endpoint</span>
+    
+    <span class="nx">@client</span> <span class="s">&#39;partner&#39;</span><span class="p">,</span> <span class="p">(</span><span class="nx">err</span><span class="p">,</span> <span class="nx">client</span><span class="p">)</span> <span class="o">=&gt;</span>
+      <span class="nx">@performCall</span> <span class="nx">client</span><span class="p">,</span> <span class="s">&#39;login&#39;</span><span class="p">,</span> <span class="nx">opts</span><span class="p">,</span> <span class="p">(</span><span class="nx">err</span><span class="p">,</span> <span class="nx">response</span><span class="p">,</span> <span class="nx">lastRequest</span><span class="p">)</span> <span class="o">=&gt;</span>
+        <span class="k">return</span> <span class="nx">callback</span> <span class="nx">err</span> <span class="k">if</span> <span class="nx">err</span>
+        
+        <span class="vi">@_sessionResponse = </span><span class="nx">response</span>
+        <span class="k">if</span> <span class="nx">response</span><span class="p">.</span><span class="nx">result</span><span class="o">?</span>
+          <span class="vi">@sid = </span><span class="nx">response</span><span class="p">.</span><span class="nx">result</span><span class="p">.</span><span class="nx">sessionId</span> <span class="o">or</span> <span class="s">&#39;&#39;</span>
+          <span class="vi">@userId = </span><span class="nx">response</span><span class="p">.</span><span class="nx">result</span><span class="p">.</span><span class="nx">userId</span> <span class="o">or</span> <span class="s">&#39;&#39;</span>
+          <span class="vi">@endpoint = </span><span class="nx">response</span><span class="p">.</span><span class="nx">result</span><span class="p">.</span><span class="nx">serverUrl</span>
+          <span class="nx">client</span><span class="p">.</span><span class="nx">setEndpoint</span> <span class="nx">@endpoint</span>
+        
+        <span class="nx">callback</span> <span class="nx">err</span><span class="p">,</span> <span class="nx">response</span><span class="p">,</span> <span class="nx">lastRequest</span>
+    <span class="k">return</span>
+      </pre></div>             </td>           </tr>                               <tr id="section-8">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-8">&#182;</a>               </div>               <h3>getUserInfo()</h3>
+
+<p>Returns a hash of information on the user that's currently logged in.</p>
+
+<pre><code>@param {function} callback(err, response, request)
+@return void
+@api public
+</code></pre>             </td>             <td class="code">               <div class="highlight"><pre>  <span class="nv">getUserInfo: </span><span class="nf">(callback) -&gt;</span>
+    <span class="nx">@client</span> <span class="s">&#39;partner&#39;</span><span class="p">,</span> <span class="p">(</span><span class="nx">err</span><span class="p">,</span> <span class="nx">client</span><span class="p">)</span> <span class="o">=&gt;</span>
+      <span class="nx">@performCall</span> <span class="nx">client</span><span class="p">,</span> <span class="s">&#39;getUserInfo&#39;</span><span class="p">,</span> <span class="kc">null</span><span class="p">,</span> <span class="nx">callback</span>
+    <span class="k">return</span>
+  </pre></div>             </td>           </tr>                               <tr id="section-9">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-9">&#182;</a>               </div>               <h3>query()</h3>
+
+<p>Allows you to run a SOQL query against the current organizations database.</p>
+
+<pre><code>@param {object} opst
+  {
+    queryString: ''
+  }
+@param {function} callback(err, response, request)
+@return void
+@api public
+</code></pre>             </td>             <td class="code">               <div class="highlight"><pre>  <span class="nv">query: </span><span class="nf">(opts, callback) -&gt;</span>
+    <span class="p">[</span><span class="nx">opts</span><span class="p">,</span> <span class="nx">callback</span><span class="p">]</span> <span class="o">=</span> <span class="nx">@cleanOptions</span> <span class="nx">opts</span><span class="p">,</span> <span class="nx">callback</span>
+    <span class="nx">@client</span> <span class="s">&#39;partner&#39;</span><span class="p">,</span> <span class="p">(</span><span class="nx">err</span><span class="p">,</span> <span class="nx">client</span><span class="p">)</span> <span class="o">=&gt;</span>
+      <span class="nx">@performCall</span> <span class="nx">client</span><span class="p">,</span> <span class="s">&#39;query&#39;</span><span class="p">,</span> <span class="nx">opts</span><span class="p">,</span> <span class="nx">callback</span>
+    <span class="k">return</span>
+  </pre></div>             </td>           </tr>                               <tr id="section-10">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-10">&#182;</a>               </div>               <h2>Apex API calls</h2>
+
+<h3>compileApex()</h3>
+
+<p>Compile Apex tries to compile the apex code of a class or a trigger
+it'll return a Compile[Class|Trigger]Result. To get further information 
+on the response check out the <a href="http://www.salesforce.com/us/developer/docs/apexcode/Content/sforce_api_calls_compileandtest_result.htm">Salesforce documentation</a></p>
+
+<pre><code>@param {object} opts
+  {
+    type: 'ApexTrigger|ApexClass',
+    scripts: ''
+  }
+@param {function} callback(err, response, request)
+@return void
+@api public
+</code></pre>             </td>             <td class="code">               <div class="highlight"><pre>  <span class="nv">compileApex: </span><span class="nf">(opts, callback) -&gt;</span>
+    <span class="p">[</span><span class="nx">opts</span><span class="p">,</span> <span class="nx">callback</span><span class="p">]</span> <span class="o">=</span> <span class="nx">@cleanOptions</span> <span class="nx">opts</span><span class="p">,</span> <span class="nx">callback</span>
+    
+    <span class="nv">type = </span><span class="k">if</span> <span class="nx">opts</span><span class="p">.</span><span class="nx">type</span> <span class="o">==</span> <span class="s">&#39;ApexTrigger&#39;</span> <span class="k">then</span> <span class="s">&#39;compileTriggers&#39;</span> <span class="k">else</span> <span class="s">&#39;compileClasses&#39;</span>
+    <span class="k">delete</span> <span class="nx">opts</span><span class="p">.</span><span class="nx">type</span>
+    <span class="nv">opts.scripts = </span><span class="nx">opts</span><span class="p">.</span><span class="nx">scripts</span> <span class="o">or</span> <span class="s">&#39;&#39;</span>
+    
+    <span class="nx">@client</span> <span class="s">&#39;apex&#39;</span><span class="p">,</span> <span class="p">(</span><span class="nx">err</span><span class="p">,</span> <span class="nx">client</span><span class="p">)</span> <span class="o">=&gt;</span>
+      <span class="nx">@performCall</span> <span class="nx">client</span><span class="p">,</span> <span class="nx">type</span><span class="p">,</span> <span class="nx">opts</span><span class="p">,</span> <span class="nx">callback</span>
+    <span class="k">return</span></pre></div>             </td>           </tr>                               <tr id="section-11">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-11">&#182;</a>               </div>               <h3>executeApex()</h3>
+
+<p>This method executes apex code anonymously on the platform and returns
+the debug log to a certain extend. You can influence the categories
+and the debug level with values found here in the <a href="http://www.salesforce.com/us/developer/docs/apexcode/Content/sforce_api_header_debuggingheader.htm">documentation</a></p>
+
+<pre><code>@param {object} opts
+  {
+    apexcode: '',
+    categories: [
+      { category: 'Apex_code', level: 'Debug' }
+    ],
+    debugLevel: 'Debugonly'
+  }
+@param {function} callback(err, response, request)
+@return void
+@api public
+</code></pre>             </td>             <td class="code">               <div class="highlight"><pre>  <span class="nv">executeApex: </span><span class="nf">(opts, callback) -&gt;</span>
+    <span class="p">[</span><span class="nx">opts</span><span class="p">,</span> <span class="nx">callback</span><span class="p">]</span> <span class="o">=</span> <span class="nx">@cleanOptions</span> <span class="nx">opts</span><span class="p">,</span> <span class="nx">callback</span>
+    <span class="p">[</span><span class="nx">opts</span><span class="p">,</span> <span class="nx">debug</span><span class="p">]</span> <span class="o">=</span> <span class="nx">@prepareDebugHeader</span> <span class="nx">opts</span>
+    
+    <span class="nv">opts.apexcode = </span><span class="nx">opts</span><span class="p">.</span><span class="nx">apexcode</span> <span class="o">or</span> <span class="s">&#39;&#39;</span>
+    
+    <span class="nx">@client</span> <span class="s">&#39;apex&#39;</span><span class="p">,</span> <span class="p">(</span><span class="nx">err</span><span class="p">,</span> <span class="nx">client</span><span class="p">)</span> <span class="o">=&gt;</span>
+      <span class="nx">@performCall</span> <span class="nx">client</span><span class="p">,</span> <span class="s">&#39;executeAnonymous&#39;</span><span class="p">,</span> <span class="nx">opts</span><span class="p">,</span> <span class="nx">callback</span><span class="p">,</span> <span class="nx">debug</span>
+    <span class="k">return</span>
+  </pre></div>             </td>           </tr>                               <tr id="section-12">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-12">&#182;</a>               </div>               <h3>runTests()</h3>
+
+<p>If you tell this method the tests you want to be run it'll run them and
+return a detailed result with debug log. To influence the debugging
+you can set sepecific settings found here in the <a href="http://www.salesforce.com/us/developer/docs/apexcode/Content/sforce_api_header_debuggingheader.htm">documentation</a></p>
+
+<pre><code>@param {object} opts
+  {
+    allTests: true|false,
+    classes: [
+      ''
+    ],
+    namespace: ''
+    categories: [
+      { category: 'Apex_code', level: 'Debug' }
+    ],
+    debugLevel: 'Debugonly'
+  }
+@param {function} callback(err, response, request)
+@return void
+@api public
+</code></pre>             </td>             <td class="code">               <div class="highlight"><pre>  <span class="nv">runTests: </span><span class="nf">(opts, callback) -&gt;</span>
+    <span class="p">[</span><span class="nx">opts</span><span class="p">,</span> <span class="nx">callback</span><span class="p">]</span> <span class="o">=</span> <span class="nx">@cleanOptions</span> <span class="nx">opts</span><span class="p">,</span> <span class="nx">callback</span>
+    <span class="p">[</span><span class="nx">opts</span><span class="p">,</span> <span class="nx">debug</span><span class="p">]</span> <span class="o">=</span> <span class="nx">@prepareDebugHeader</span> <span class="nx">opts</span>
+    
+    <span class="nv">opts.namespace = </span><span class="nx">opts</span><span class="p">.</span><span class="nx">namespace</span> <span class="o">or</span> <span class="s">&#39;&#39;</span> <span class="c1"># @orgNamespace() or &#39;&#39;</span>
+    
+    <span class="nx">@client</span> <span class="s">&#39;apex&#39;</span><span class="p">,</span> <span class="p">(</span><span class="nx">err</span><span class="p">,</span> <span class="nx">client</span><span class="p">)</span> <span class="o">=&gt;</span>
+      <span class="nx">@performCall</span> <span class="nx">client</span><span class="p">,</span> <span class="s">&#39;runTests&#39;</span><span class="p">,</span> <span class="nv">request: </span><span class="nx">opts</span><span class="p">,</span> <span class="nx">callback</span><span class="p">,</span> <span class="nx">debug</span>
+    <span class="k">return</span>
+    </pre></div>             </td>           </tr>                               <tr id="section-13">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-13">&#182;</a>               </div>               <h2>MetaData API calls</h2>
+
+<h3>retrieve()</h3>
+
+<p>Retrieve will start a zip process on the server for the required
+metadata. The response contains an Id which is used to check the
+status of the packaging process and to download the zip file once
+packaged. Specifics on the response can be found here in the
+<a href="http://www.salesforce.com/us/developer/docs/api_meta/Content/meta_asyncresult.htm">documentation</a></p>
+
+<pre><code>@param {object} opts
+  {
+    apiVersion: 26.0
+    packageNames: [
+      ''
+    ],
+    singlePackage: true|false,
+    specificFiles: [
+      ''
+    ],
+    unpackaged: {
+      apiAccessLevel: 'Unrestricted|Restricted',
+      description: '',
+      fullName: '',
+      namespacePrefix: '',
+      objectPermissions: [{
+        allowCreate: true|false,
+        allowDelete: true|false,
+        allowEdit: true|false,
+        allowRead: true|false,
+        modifyAllRecords: true|false,
+        object: '',
+        viewAllRecords: true|false,
+      }],
+      setupWeblink: '',
+      types: [
+        { members: '', name: '' }
+      ],
+      version: ''
+    }
+  }
+@param {function} callback(err, response, request)
+@return void
+@api public
+</code></pre>             </td>             <td class="code">               <div class="highlight"><pre>  <span class="nv">retrieve: </span><span class="nf">(opts, callback) -&gt;</span>
+    <span class="p">[</span><span class="nx">opts</span><span class="p">,</span> <span class="nx">callback</span><span class="p">]</span> <span class="o">=</span> <span class="nx">@cleanOptions</span> <span class="nx">opts</span><span class="p">,</span> <span class="nx">callback</span>
+    
+    <span class="k">if</span> <span class="nx">opts</span><span class="p">.</span><span class="nx">wait</span>
+      <span class="k">delete</span> <span class="nx">opts</span><span class="p">.</span><span class="nx">wait</span>
+      <span class="nv">callback = </span><span class="nx">@createCheckStatus</span> <span class="nx">callback</span><span class="p">,</span> <span class="s">&#39;checkRetrieveStatus&#39;</span>
+    
+    <span class="nx">@client</span> <span class="s">&#39;metadata&#39;</span><span class="p">,</span> <span class="p">(</span><span class="nx">err</span><span class="p">,</span> <span class="nx">client</span><span class="p">)</span> <span class="o">=&gt;</span>
+      <span class="nx">@performCall</span> <span class="nx">client</span><span class="p">,</span> <span class="s">&#39;retrieve&#39;</span><span class="p">,</span> <span class="nv">retrieveRequest: </span><span class="nx">opts</span><span class="p">,</span> <span class="nx">callback</span>
+    <span class="k">return</span>
+  </pre></div>             </td>           </tr>                               <tr id="section-14">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-14">&#182;</a>               </div>               <h3>checkRetrieveStatus()</h3>
+
+<p>Checks the status of declarative metadata call retrieve() and returns the zip
+contents.</p>
+
+<pre><code>@param {object} opts
+  {
+    id: ''
+  }
+@param {function} callback(err, response, request)
+@return void
+@api public
+</code></pre>             </td>             <td class="code">               <div class="highlight"><pre>  <span class="nv">checkRetrieveStatus: </span><span class="nf">(opts, callback) -&gt;</span>
+    <span class="p">[</span><span class="nx">opts</span><span class="p">,</span> <span class="nx">callback</span><span class="p">]</span> <span class="o">=</span> <span class="nx">@cleanOptions</span> <span class="nx">opts</span><span class="p">,</span> <span class="nx">callback</span>
+    <span class="nx">@client</span> <span class="s">&#39;metadata&#39;</span><span class="p">,</span> <span class="p">(</span><span class="nx">err</span><span class="p">,</span> <span class="nx">client</span><span class="p">)</span> <span class="o">=&gt;</span>
+      <span class="nx">@performCall</span> <span class="nx">client</span><span class="p">,</span> <span class="s">&#39;checkRetrieveStatus&#39;</span><span class="p">,</span> <span class="nx">opts</span><span class="p">,</span> <span class="nx">callback</span>
+    <span class="k">return</span>
+  </pre></div>             </td>           </tr>                               <tr id="section-15">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-15">&#182;</a>               </div>               <h3>deploy()</h3>
+
+<p>This method takes a zip file (base64 encoded) and sends it to the
+server, based on the contents of the zip file it'll perform a 
+create, update or delete.</p>
+
+<pre><code>@param {object} opts
+  {
+    zipFile: '',
+    deployOptions: {
+      allowMissingFiles: true|false,
+      autoUpdatePackage: true|false,
+      checkOnly: true|false,
+      ignoreWarnings: true|false,
+      performRetrieve: true|false,
+      purgeOnDelete: true|false,
+      rollbackOnError: true|false,
+      runAllTests: true|false,
+      runTests: [
+        ''
+      ],
+      singlePackage: true|false
+    }
+  }
+@param {function} callback(err, response, request)
+@return void
+@api public
+</code></pre>             </td>             <td class="code">               <div class="highlight"><pre>  <span class="nv">deploy: </span><span class="nf">(opts, callback) -&gt;</span>
+    <span class="p">[</span><span class="nx">opts</span><span class="p">,</span> <span class="nx">callback</span><span class="p">]</span> <span class="o">=</span> <span class="nx">@cleanOptions</span> <span class="nx">opts</span><span class="p">,</span> <span class="nx">callback</span>
+    
+    <span class="k">if</span> <span class="nx">opts</span><span class="p">.</span><span class="nx">wait</span>
+      <span class="k">delete</span> <span class="nx">opts</span><span class="p">.</span><span class="nx">wait</span>
+      <span class="nv">callback = </span><span class="nx">@createCheckStatus</span> <span class="nx">callback</span><span class="p">,</span> <span class="s">&#39;checkDeployStatus&#39;</span>
+    
+    <span class="nx">@client</span> <span class="s">&#39;metadata&#39;</span><span class="p">,</span> <span class="p">(</span><span class="nx">err</span><span class="p">,</span> <span class="nx">client</span><span class="p">)</span> <span class="o">=&gt;</span>
+      <span class="nx">@performCall</span> <span class="nx">client</span><span class="p">,</span> <span class="s">&#39;deploy&#39;</span><span class="p">,</span> <span class="nx">opts</span><span class="p">,</span> <span class="nx">callback</span>
+    <span class="k">return</span>
+  
+  </pre></div>             </td>           </tr>                               <tr id="section-16">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-16">&#182;</a>               </div>               <h3>checkDeployStatus()</h3>
+
+<p>Checks the status of declarative metadata call deploy().</p>
+
+<pre><code>@param {object} opts
+  {
+    id: ''
+  }
+@param {function} callback(err, response, request)
+@return void
+@api public
+</code></pre>             </td>             <td class="code">               <div class="highlight"><pre>  <span class="nv">checkDeployStatus: </span><span class="nf">(opts, callback) -&gt;</span>
+    <span class="p">[</span><span class="nx">opts</span><span class="p">,</span> <span class="nx">callback</span><span class="p">]</span> <span class="o">=</span> <span class="nx">@cleanOptions</span> <span class="nx">opts</span><span class="p">,</span> <span class="nx">callback</span>
+    <span class="nx">@client</span> <span class="s">&#39;metadata&#39;</span><span class="p">,</span> <span class="p">(</span><span class="nx">err</span><span class="p">,</span> <span class="nx">client</span><span class="p">)</span> <span class="o">=&gt;</span>
+      <span class="nx">@performCall</span> <span class="nx">client</span><span class="p">,</span> <span class="s">&#39;checkDeployStatus&#39;</span><span class="p">,</span> <span class="nx">opts</span><span class="p">,</span> <span class="nx">callback</span>
+    <span class="k">return</span>
+  </pre></div>             </td>           </tr>                               <tr id="section-17">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-17">&#182;</a>               </div>               <h3>describe()</h3>
+
+<p>This call retrieves metadata which describes the organization.</p>
+
+<pre><code>@param {object} opts
+  {
+    apiVersion: 26.0
+  }
+@param {function} callback(err, response, request)
+@return void
+@api public
+</code></pre>             </td>             <td class="code">               <div class="highlight"><pre>  <span class="nv">describe: </span><span class="nf">(opts, callback) -&gt;</span>
+    <span class="p">[</span><span class="nx">opts</span><span class="p">,</span> <span class="nx">callback</span><span class="p">]</span> <span class="o">=</span> <span class="nx">@cleanOptions</span> <span class="nx">opts</span><span class="p">,</span> <span class="nx">callback</span>
+    <span class="nv">opts.apiVersion = </span><span class="nx">opts</span><span class="p">.</span><span class="nx">apiVersion</span> <span class="o">or</span> <span class="nx">@apiVersion</span>
+    <span class="nx">@client</span> <span class="s">&#39;metadata&#39;</span><span class="p">,</span> <span class="p">(</span><span class="nx">err</span><span class="p">,</span> <span class="nx">client</span><span class="p">)</span> <span class="o">=&gt;</span>
+      <span class="nx">@performCall</span> <span class="nx">client</span><span class="p">,</span> <span class="s">&#39;describeMetadata&#39;</span><span class="p">,</span> <span class="nx">opts</span><span class="p">,</span> <span class="nx">callback</span>
+    <span class="k">return</span></pre></div>             </td>           </tr>                               <tr id="section-18">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-18">&#182;</a>               </div>               <h3>list()</h3>
+
+<p>Retrieve property information about the metadata components in the
+organization.</p>
+
+<pre><code>@param {object} opts
+  {
+    queries: [{
+      folder: ''
+      type: ''
+    }],
+    asOfVersion: 26.0
+  }
+@param {function} callback(err, response, request)
+@return void
+@api public
+</code></pre>             </td>             <td class="code">               <div class="highlight"><pre>  <span class="nv">list: </span><span class="nf">(opts, callback) -&gt;</span>
+    <span class="p">[</span><span class="nx">opts</span><span class="p">,</span> <span class="nx">callback</span><span class="p">]</span> <span class="o">=</span> <span class="nx">@cleanOptions</span> <span class="nx">opts</span><span class="p">,</span> <span class="nx">callback</span>
+    <span class="nv">opts.asOfVersion = </span><span class="nb">parseFloat</span><span class="p">(</span><span class="nx">opts</span><span class="p">.</span><span class="nx">asOfVersion</span> <span class="o">or</span> <span class="nx">@apiVersion</span><span class="p">).</span><span class="nx">toFixed</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+    <span class="nx">@client</span> <span class="s">&#39;metadata&#39;</span><span class="p">,</span> <span class="p">(</span><span class="nx">err</span><span class="p">,</span> <span class="nx">client</span><span class="p">)</span> <span class="o">=&gt;</span>
+      <span class="nx">@performCall</span> <span class="nx">client</span><span class="p">,</span> <span class="s">&#39;listMetadata&#39;</span><span class="p">,</span> <span class="nx">opts</span><span class="p">,</span> <span class="nx">callback</span>
+    <span class="k">return</span>
+  </pre></div>             </td>           </tr>                               <tr id="section-19">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-19">&#182;</a>               </div>               <h2>Public Helper Methods</h2>
+
+<h3>checkStatus</h3>
+
+<p>Checks the status of asynchronous metadata calls create(), update(), delete() or
+the declarative metadata calls deploy() or retrieve().</p>
+
+<pre><code>@params {object} opts
+  {
+    ids: [
+      ''
+    ]
+  }
+@param {function} callback(err, response, request)
+@return void
+@api public
+</code></pre>             </td>             <td class="code">               <div class="highlight"><pre>  <span class="nv">checkStatus: </span><span class="nf">(opts, callback) -&gt;</span>
+    <span class="p">[</span><span class="nx">opts</span><span class="p">,</span> <span class="nx">callback</span><span class="p">]</span> <span class="o">=</span> <span class="nx">@cleanOptions</span> <span class="nx">opts</span><span class="p">,</span> <span class="nx">callback</span>
+    <span class="nx">@client</span> <span class="s">&#39;metadata&#39;</span><span class="p">,</span> <span class="p">(</span><span class="nx">err</span><span class="p">,</span> <span class="nx">client</span><span class="p">)</span> <span class="o">=&gt;</span>
+      <span class="nx">@performCall</span> <span class="nx">client</span><span class="p">,</span> <span class="s">&#39;checkStatus&#39;</span><span class="p">,</span> <span class="nx">opts</span><span class="p">,</span> <span class="nx">callback</span>
+    <span class="k">return</span>
+  </pre></div>             </td>           </tr>                               <tr id="section-20">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-20">&#182;</a>               </div>               <h2>Private Helper Methods</h2>
+
+<h3>createCheckStatus()</h3>
+
+<p>Creates a check loop function used in retrieve() and deploy() if you set
+the option wait to true.</p>
+
+<pre><code>@param {function} callback
+@param {string} checkMethodName
+@return {function}
+@api private
+</code></pre>             </td>             <td class="code">               <div class="highlight"><pre>  <span class="nv">createCheckStatus: </span><span class="nf">(callback, checkMethodName) -&gt;</span>
+    <span class="k">return</span> <span class="nv">checkStatus = </span><span class="p">(</span><span class="nx">err</span><span class="p">,</span> <span class="nx">response</span><span class="p">,</span> <span class="nx">request</span><span class="p">)</span> <span class="o">=&gt;</span>
+      <span class="k">return</span> <span class="nx">callback</span> <span class="nx">err</span> <span class="k">if</span> <span class="nx">err</span>
+      <span class="nv">response.result = </span><span class="nx">response</span><span class="p">.</span><span class="nx">result</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">if</span> <span class="nb">Array</span><span class="p">.</span><span class="nx">isArray</span> <span class="nx">response</span><span class="p">.</span><span class="nx">result</span>
+            
+      <span class="k">if</span> <span class="nx">response</span><span class="p">.</span><span class="nx">result</span><span class="p">.</span><span class="nx">done</span>
+        <span class="k">return</span> <span class="nx">@</span><span class="p">[</span><span class="nx">checkMethodName</span><span class="p">]</span> <span class="nv">id: </span><span class="nx">response</span><span class="p">.</span><span class="nx">result</span><span class="p">.</span><span class="nx">id</span><span class="p">,</span> <span class="nx">callback</span>
+    
+      <span class="nx">process</span><span class="p">.</span><span class="nx">nextTick</span> <span class="o">=&gt;</span>
+        <span class="nx">@checkStatus</span> <span class="nv">ids: </span><span class="p">[</span><span class="nx">response</span><span class="p">.</span><span class="nx">result</span><span class="p">.</span><span class="nx">id</span><span class="p">],</span> <span class="nx">checkStatus</span>
+  </pre></div>             </td>           </tr>                               <tr id="section-21">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-21">&#182;</a>               </div>               <h3>fromSession()</h3>
+
+<p>This helper method get's called if you try to call a method having the client
+setup only with the session id and the endpoint. It'll use the current session
+and try to get additional user information. As an indicator we use the users
+id, if set it'll assume the session is alive otherwise it'll try and fetch it.</p>
+
+<pre><code>@param {soap.Client} client
+@param {string} method
+@param {object} opts
+@param {callback} callback(err, response, lastRequest)
+@param {object|boolean} debugHeader
+@return void
+@api private
+</code></pre>             </td>             <td class="code">               <div class="highlight"><pre>  <span class="nv">fromSession: </span><span class="nf">(callback) -&gt;</span>
+    <span class="k">if</span> <span class="nx">@endpoint</span> <span class="o">and</span> <span class="nx">@sid</span> <span class="o">and</span> <span class="nx">@userId</span> <span class="o">and</span> <span class="nx">@_sessionResponse</span>
+      <span class="nx">callback</span> <span class="kc">null</span><span class="p">,</span> <span class="nx">@_sessionResponse</span>
+    <span class="k">else</span>
+      <span class="nx">@client</span> <span class="s">&#39;partner&#39;</span><span class="p">,</span> <span class="p">(</span><span class="nx">err</span><span class="p">,</span> <span class="nx">client</span><span class="p">)</span> <span class="o">=&gt;</span>
+        <span class="nv">client.soapHeaders = </span><span class="p">[]</span>
+        <span class="nx">client</span><span class="p">.</span><span class="nx">addSoapHeader</span> <span class="nx">@getSoapHeader</span><span class="p">(),</span> <span class="kc">null</span><span class="p">,</span> <span class="s">&#39;tns&#39;</span>
+        <span class="nx">client</span><span class="p">.</span><span class="nx">getUserInfo</span> <span class="p">(</span><span class="nx">err</span><span class="p">,</span> <span class="nx">response</span><span class="p">)</span> <span class="o">=&gt;</span>
+          <span class="k">return</span> <span class="nx">callback</span> <span class="nx">err</span> <span class="k">if</span> <span class="nx">err</span>
+          <span class="vi">@userId = </span><span class="nx">response</span><span class="p">.</span><span class="nx">result</span><span class="p">.</span><span class="nx">userId</span>
+          <span class="nx">callback</span> <span class="nx">err</span><span class="p">,</span> <span class="vi">@_sessionResponse = </span><span class="nx">response</span>
+  </pre></div>             </td>           </tr>                               <tr id="section-22">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-22">&#182;</a>               </div>               <h3>performCall()</h3>
+
+<p>This method performs the actual call to the API. Afterwards it'll call the
+callback function with the response.</p>
+
+<pre><code>@param {soap.Client} client
+@param {string} method
+@param {object} opts
+@param {callback} callback(err, response, lastRequest)
+@param {object|boolean} debugHeader
+@return void
+@api private
+</code></pre>             </td>             <td class="code">               <div class="highlight"><pre>  <span class="nv">performCall: </span><span class="nf">(client, method, opts, callback, debugHeader = false) -&gt;</span>
+    <span class="k">if</span> <span class="o">not</span> <span class="nx">@userId</span> <span class="o">and</span> <span class="nx">@endpoint</span> <span class="o">and</span> <span class="nx">@sid</span>
+      <span class="k">return</span> <span class="nx">@fromSession</span> <span class="p">(</span><span class="nx">err</span><span class="p">,</span> <span class="nx">response</span><span class="p">)</span> <span class="o">=&gt;</span>
+        <span class="k">return</span> <span class="nx">callback</span> <span class="nx">err</span> <span class="k">if</span> <span class="nx">err</span>
+        <span class="nx">@performCall</span> <span class="nx">client</span><span class="p">,</span> <span class="nx">method</span><span class="p">,</span> <span class="nx">opts</span><span class="p">,</span> <span class="nx">callback</span><span class="p">,</span> <span class="nx">debugHeader</span>
+    
+    <span class="nv">client.soapHeaders = </span><span class="p">[]</span>
+    <span class="nx">client</span><span class="p">.</span><span class="nx">addSoapHeader</span> <span class="nx">@getSoapHeader</span><span class="p">(),</span> <span class="kc">null</span><span class="p">,</span> <span class="s">&#39;tns&#39;</span> <span class="k">if</span> <span class="nx">@sid</span>
+    <span class="nx">client</span><span class="p">.</span><span class="nx">addSoapHeader</span> <span class="nx">debugHeader</span><span class="p">,</span> <span class="kc">null</span><span class="p">,</span> <span class="s">&#39;tns&#39;</span> <span class="k">if</span> <span class="nx">debugHeader</span>
+    <span class="nx">client</span><span class="p">[</span><span class="nx">method</span><span class="p">]</span> <span class="nx">opts</span><span class="p">,</span> <span class="p">(</span><span class="nx">err</span><span class="p">,</span> <span class="nx">response</span><span class="p">,</span> <span class="nx">body</span><span class="p">)</span> <span class="o">=&gt;</span>
+      <span class="nx">unless</span> <span class="nx">err</span> 
+        <span class="nv">header = </span><span class="nx">client</span><span class="p">.</span><span class="nx">wsdl</span><span class="p">.</span><span class="nx">xmlToObject</span><span class="p">(</span><span class="nx">body</span><span class="p">).</span><span class="nx">Header</span>
+      <span class="nx">callback</span> <span class="nx">err</span><span class="p">,</span> <span class="nx">response</span><span class="p">,</span> <span class="nx">client</span><span class="p">.</span><span class="nx">lastRequest</span><span class="p">,</span> <span class="nx">header</span> <span class="o">or</span> <span class="p">{}</span>
+    <span class="k">return</span>
+  </pre></div>             </td>           </tr>                               <tr id="section-23">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-23">&#182;</a>               </div>               <h3>getSoapHeader()</h3>
+
+<p>Returns the Session Header</p>
+
+<p>@return {object} SessionHeader
+@api private</p>             </td>             <td class="code">               <div class="highlight"><pre>  <span class="nv">getSoapHeader: </span><span class="o">-&gt;</span>
+    <span class="nv">SessionHeader: sessionId: </span><span class="nx">@sid</span>
+  </pre></div>             </td>           </tr>                               <tr id="section-24">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-24">&#182;</a>               </div>               <h3>prepareDebugHeader()</h3>
+
+<p>Returns the Debug Header object</p>
+
+<pre><code>@param {object} opts
+@return {object} DebugHeader
+@api private
+</code></pre>             </td>             <td class="code">               <div class="highlight"><pre>  <span class="nv">prepareDebugHeader: </span><span class="nf">(opts) -&gt;</span>
+    <span class="nv">debug = </span>
+      <span class="nv">DebuggingHeader:</span>
+        <span class="nv">debugLevel: </span><span class="nx">opts</span><span class="p">.</span><span class="nx">debugLevel</span> <span class="o">or</span> <span class="s">&#39;Debugonly&#39;</span>
+        <span class="nv">categories: </span><span class="nx">opts</span><span class="p">.</span><span class="nx">categories</span> <span class="o">or</span> <span class="p">[{</span> <span class="nv">category: </span><span class="s">&#39;Apex_code&#39;</span><span class="p">,</span> <span class="nv">level: </span><span class="s">&#39;Debug&#39;</span> <span class="p">}]</span>
+    <span class="k">delete</span> <span class="nx">opts</span><span class="p">.</span><span class="nx">categories</span>
+    <span class="k">delete</span> <span class="nx">opts</span><span class="p">.</span><span class="nx">debugLevel</span>
+    <span class="p">[</span><span class="nx">opts</span><span class="p">,</span> <span class="nx">debug</span><span class="p">]</span>
+  </pre></div>             </td>           </tr>                               <tr id="section-25">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-25">&#182;</a>               </div>               <h3>cleanOptions()</h3>
+
+<p>Returns an array with cleaned arguments this allows you to call a method
+without having to set options.</p>
+
+<pre><code>@param {object} opts
+@param {function} callback
+@return {array} [opts, callback]
+@api private
+</code></pre>             </td>             <td class="code">               <div class="highlight"><pre>  <span class="nv">cleanOptions: </span><span class="nf">(opts, callback) -&gt;</span>
+    <span class="k">if</span> <span class="k">typeof</span> <span class="nx">opts</span> <span class="o">==</span> <span class="s">&#39;function&#39;</span>
+      <span class="nv">callback = </span><span class="nx">opts</span>
+      <span class="nv">opts = </span><span class="p">{}</span>
+    <span class="p">[</span><span class="nx">opts</span><span class="p">,</span> <span class="nx">callback</span><span class="p">]</span>
+  </pre></div>             </td>           </tr>                               <tr id="section-26">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-26">&#182;</a>               </div>               <h3>client()</h3>
+
+<p>Function to create a SOAP client for the defined wsdl.</p>
+
+<pre><code>@param {string} type
+@param {function} callback
+@return {soap.Client}
+@api private
+</code></pre>             </td>             <td class="code">               <div class="highlight"><pre>  <span class="nv">client: </span><span class="nf">(type, callback) -&gt;</span>
+    <span class="k">return</span> <span class="nx">callback</span> <span class="kc">null</span><span class="p">,</span> <span class="nx">@</span><span class="p">[</span><span class="s">&quot;_</span><span class="si">#{</span><span class="nx">type</span><span class="si">}</span><span class="s">Client&quot;</span><span class="p">]</span> <span class="k">if</span> <span class="nx">@</span><span class="p">[</span><span class="s">&quot;_</span><span class="si">#{</span><span class="nx">type</span><span class="si">}</span><span class="s">Client&quot;</span><span class="p">]</span>
+    
+    <span class="nv">wsdl = </span><span class="nx">path</span><span class="p">.</span><span class="nx">resolve</span><span class="p">(</span><span class="nx">__dirname</span><span class="p">,</span> <span class="s">&quot;../wsdl/</span><span class="si">#{</span><span class="nx">@apiVersion</span><span class="p">.</span><span class="nx">toFixed</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span><span class="si">}</span><span class="s">/</span><span class="si">#{</span><span class="nx">type</span><span class="si">}</span><span class="s">.xml&quot;</span><span class="p">)</span>
+    
+    <span class="k">switch</span> <span class="nx">type</span>
+      <span class="k">when</span> <span class="s">&#39;metadata&#39;</span> <span class="k">then</span> <span class="nv">repl = </span><span class="s">&#39;/m/&#39;</span>
+      <span class="k">when</span> <span class="s">&#39;apex&#39;</span> <span class="k">then</span> <span class="nv">repl = </span><span class="s">&#39;/s/&#39;</span>
+      <span class="k">else</span> <span class="nv">repl = </span><span class="s">&#39;/u/&#39;</span>
+    
+    <span class="nx">soap</span><span class="p">.</span><span class="nx">createClient</span> <span class="nx">wsdl</span><span class="p">,</span> <span class="p">(</span><span class="nx">err</span><span class="p">,</span> <span class="nx">client</span><span class="p">)</span> <span class="o">=&gt;</span>
+      <span class="nx">client</span><span class="p">.</span><span class="nx">setEndpoint</span> <span class="nx">@endpoint</span><span class="p">.</span><span class="nx">replace</span> <span class="sr">/\/u\//</span><span class="p">,</span> <span class="nx">repl</span>
+      <span class="nx">@</span><span class="p">[</span><span class="s">&quot;_</span><span class="si">#{</span><span class="nx">type</span><span class="si">}</span><span class="s">Client&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nx">client</span>
+      <span class="nx">callback</span> <span class="nx">err</span><span class="p">,</span> <span class="nx">client</span>
+
+</pre></div>             </td>           </tr>                </tbody>     </table>   </div> </body> </html> 

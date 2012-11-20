@@ -1,0 +1,41 @@
+#!/usr/bin/env node
+
+var spawn = require('child_process').spawn,
+    path  = require('path'),
+    binmo = path.resolve(__dirname + '/../node_modules/mocha/bin/mocha'),
+    program = require('commander');
+
+
+program
+  .option('-u, --username [username]', 'The username for the developer org.')
+  .option('-p, --passwd [password]', 'The password for the developer org.')
+  .option('-f, --file [file]', 'The file you want to test.')
+  .parse(process.argv);
+
+function check() {
+  if (!program.username) {
+    program.prompt('Username: ', function(name) {
+      program.username = name;
+      check();
+    });
+  } else if (!program.passwd) {
+    program.password('Password: ', '*', function(pwd) {
+      program.passwd = pwd;
+      check();
+    });
+  } else {
+    process.env.USERNAME = program.username;
+    process.env.PASSWORD = program.passwd;
+    
+    spawn(binmo, [
+      '--reporter', 'spec',
+      '--compilers', 'coffee:coffee-script',
+      '--ui', 'exports',
+      '--timeout', '16000',
+      path.resolve(__dirname) + '/' + (program.file || 'client') + '.coffee'
+    ], { 
+      stdio: 'inherit'
+    }).on('exit', process.exit);
+  }
+}
+check();

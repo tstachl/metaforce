@@ -1,0 +1,36 @@
+{
+  "name": "metaforce",
+  "description": "A wrapper for the Force.com Metadata API",
+  "version": "0.0.1",
+  "author": "Thomas Stachl <thomas@stachl.me>",
+  "homepage": "https://github.com/tstachl/metaforce",
+  "maintainers": [
+    "Thomas Stachl <thomas@stachl.me>"
+  ],
+  "repository": { 
+    "type":"git", 
+    "url":"https://github.com/tstachl/metaforce.git"
+  },
+  "private": true,
+  "dependencies": {
+    "coffee-script": "1.4.0",
+    "soap": "git://github.com/tstachl/node-soap.git#fe1e3afa34a594787179047c41cd2fb33f3a4687"
+  },
+  "devDependencies": {
+    "mocha": "1.7.0",
+    "should": "1.2.1",
+    "node-zip": "0.0.2",
+    "commander": "1.1.0"
+  },
+  "main": "./metaforce",
+  "scripts": {
+    "test": "test/runner"
+  },
+  "licenses": [{
+    "type": "MIT LICENSE",
+    "url": "http://www.opensource.org/licenses/mit-license.php"
+  }],
+  "engines": {
+    "node": ">=0.8.0"
+  }
+}
