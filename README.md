@@ -219,3 +219,7 @@ Here is a little usage information:
       -u, --username [username]  The username for the developer org.
       -p, --passwd [password]    The password for the developer org.
       -f, --file [file]          The file you want to test.
+
+
+[![Bitdeli Badge](https://d2weczhvl823v0.cloudfront.net/tstachl/metaforce/trend.png)](https://bitdeli.com/free "Bitdeli Badge")
+
